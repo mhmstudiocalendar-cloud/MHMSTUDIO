@@ -31,6 +31,11 @@ const auth = new google.auth.GoogleAuth({
 
 const calendar = google.calendar({ version: 'v3', auth });
 
+// 🚀 Rota raiz (para testares no browser)
+app.get("/", (req, res) => {
+  res.send("Servidor do MHMSTUDIO está ativo 🚀");
+});
+
 // 📅 Rota para criar evento
 app.post('/adicionar-evento', async (req, res) => {
   const { nome, servico, barbeiro, data, hora, summary, description, start, end } = req.body;
@@ -39,12 +44,7 @@ app.post('/adicionar-evento', async (req, res) => {
 
   if (summary && description && start && end) {
     // Formato estruturado (manual / recorrente)
-    evento = {
-      summary,
-      description,
-      start,
-      end,
-    };
+    evento = { summary, description, start, end };
   } else if (nome && servico && barbeiro && data && hora) {
     // Formato simples (cliente normal)
     const startTime = DateTime.fromISO(`${data}T${hora}`, { zone: 'Europe/Lisbon' });
@@ -73,20 +73,19 @@ app.post('/adicionar-evento', async (req, res) => {
       requestBody: evento,
     });
 
-    const iddamarcacao = response.data.id; // CORREÇÃO: declarar variável
+    const iddamarcacao = response.data.id;
     console.log('✅ Evento enviado para o Google Calendar:', iddamarcacao);
 
     return res.status(200).json({
       success: true,
       eventLink: response.data.htmlLink,
-      iddamarcacao: iddamarcacao
+      iddamarcacao
     });
   } catch (error) {
     console.error('❌ Erro ao criar evento:', error);
     return res.status(500).json({ error: 'Erro ao criar evento no Google Calendar' });
   }
 });
-
 
 // 🗑 Rota para remover evento
 app.post("/remover-evento", async (req, res) => {
@@ -109,7 +108,7 @@ app.post("/remover-evento", async (req, res) => {
   }
 });
 
-// 🆕 SUBSTITUI este bloco inteiro do /adicionar-ausencia
+// 🆕 Adicionar ausência
 app.post("/adicionar-ausencia", async (req, res) => {
   try {
     const { nome, dataInicio, dataFim, hora } = req.body;
@@ -159,16 +158,16 @@ app.post("/adicionar-ausencia", async (req, res) => {
 
     const response = await calendar.events.insert({
       calendarId: 'mhmstudio.calendar@gmail.com',
-      requestBody: evento, // manter consistente com /adicionar-evento
+      requestBody: evento,
     });
 
-    const idAusencia = response.data.id; // 👈 igual ao das marcações
+    const idAusencia = response.data.id;
     console.log("✅ Ausência enviada para o Google Calendar:", idAusencia);
 
     return res.status(200).json({
       success: true,
       eventLink: response.data.htmlLink,
-      idAusencia: idAusencia
+      idAusencia
     });
   } catch (error) {
     console.error("❌ Erro ao adicionar ausência:", error);
@@ -176,9 +175,7 @@ app.post("/adicionar-ausencia", async (req, res) => {
   }
 });
 
-
-
-// 🗑 Rota para remover ausencia
+// 🗑 Rota para remover ausência
 app.post("/remover-ausencia", async (req, res) => {
   try {
     const { idAusencia } = req.body;
@@ -199,5 +196,8 @@ app.post("/remover-ausencia", async (req, res) => {
   }
 });
 
-
-app.listen(8085);
+// 🚀 Usa a porta do Render (ou 8085 em local)
+const PORT = process.env.PORT || 8085;
+app.listen(PORT, () => {
+  console.log(`🚀 Servidor a correr na porta ${PORT}`);
+});

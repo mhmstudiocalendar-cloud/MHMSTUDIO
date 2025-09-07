@@ -23,6 +23,7 @@ const credentials = {
   universe_domain: process.env.GOOGLE_UNIVERSE_DOMAIN,
 };
 
+// 🔐 Autenticação
 const auth = new google.auth.GoogleAuth({
   credentials: credentials,
   scopes: ['https://www.googleapis.com/auth/calendar'],
@@ -30,34 +31,43 @@ const auth = new google.auth.GoogleAuth({
 
 const calendar = google.calendar({ version: 'v3', auth });
 
+// 🚀 Rota raiz (para testares no browser)
 app.get("/", (req, res) => {
   res.send("Servidor do MHMSTUDIO está ativo 🚀");
 });
 
+// 📅 Rota para criar evento
 app.post('/adicionar-evento', async (req, res) => {
   const { nome, servico, barbeiro, data, hora, summary, description, start, end } = req.body;
 
   let evento = {};
 
   if (summary && description && start && end) {
+    // Formato estruturado (manual / recorrente)
     evento = { summary, description, start, end };
   } else if (nome && servico && barbeiro && data && hora) {
+    // Formato simples (cliente normal)
     const startTime = DateTime.fromISO(`${data}T${hora}`, { zone: 'Europe/Lisbon' });
     const endTime = startTime.plus({ minutes: 60 });
 
-    evento = {
-      summary: `${nome} - ${servico}`,
-      description: `Barbeiro: ${barbeiro}`,
-      colorId: barbeiro === 'Cláudio Monteiro' ? '1' : barbeiro === 'André Henriques (CC)' ? '2' : undefined,
-      start: {
-        dateTime: startTime.toISO(),
-        timeZone: 'Europe/Lisbon',
-      },
-      end: {
-        dateTime: endTime.toISO(),
-        timeZone: 'Europe/Lisbon',
-      },
-    };
+  const barbeiroColors = {
+    'Cláudio Monteiro': '1',
+    'André Henriques (CC)': '2',
+  };
+
+  evento = {
+    summary: `${nome} - ${servico}`,
+    description: `Barbeiro: ${barbeiro}`,
+    colorId: barbeiroColors[barbeiro],
+    start: {
+      dateTime: startTime.toISO(),
+      timeZone: 'Europe/Lisbon',
+    },
+    end: {
+      dateTime: endTime.toISO(),
+      timeZone: 'Europe/Lisbon',
+    },
+  };
   } else {
     return res.status(400).json({ error: 'Dados em falta para criar o evento.' });
   }
@@ -82,6 +92,7 @@ app.post('/adicionar-evento', async (req, res) => {
   }
 });
 
+// 🗑 Rota para remover evento
 app.post("/remover-evento", async (req, res) => {
   try {
     const { iddamarcacao } = req.body;
@@ -102,6 +113,7 @@ app.post("/remover-evento", async (req, res) => {
   }
 });
 
+// 🆕 Adicionar ausência
 app.post("/adicionar-ausencia", async (req, res) => {
   try {
     const { nome, dataInicio, dataFim, hora } = req.body;
@@ -114,6 +126,7 @@ app.post("/adicionar-ausencia", async (req, res) => {
     let evento;
 
     if (hora) {
+      // Ausência numa hora específica (+1h)
       const [h, m] = hora.split(":").map(Number);
       const endH = h + 1;
       const endTime = `${String(endH).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
@@ -129,9 +142,10 @@ app.post("/adicionar-ausencia", async (req, res) => {
           dateTime: `${dataInicio}T${endTime}:00`,
           timeZone: tz,
         },
-        colorId: "11",
+        colorId: "11", // vermelho
       };
     } else {
+      // All-day → end.date = (dataFim || dataInicio) + 1 dia
       const startDate = new Date(`${dataInicio}T00:00:00`);
       const endDateBase = new Date(`${(dataFim || dataInicio)}T00:00:00`);
       const endDate = new Date(endDateBase.getTime() + 24 * 60 * 60 * 1000);
@@ -166,6 +180,7 @@ app.post("/adicionar-ausencia", async (req, res) => {
   }
 });
 
+// 🗑 Rota para remover ausência
 app.post("/remover-ausencia", async (req, res) => {
   try {
     const { idAusencia } = req.body;
@@ -186,6 +201,7 @@ app.post("/remover-ausencia", async (req, res) => {
   }
 });
 
+// 🚀 Usa a porta do Render (ou 8085 em local)
 const PORT = process.env.PORT || 8085;
 app.listen(PORT, () => {
   console.log(`🚀 Servidor a correr na porta ${PORT}`);

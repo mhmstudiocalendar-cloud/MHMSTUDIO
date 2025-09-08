@@ -38,58 +38,75 @@ app.get("/", (req, res) => {
 
 // 📅 Rota para criar evento
 app.post('/adicionar-evento', async (req, res) => {
-  const { nome, servico, barbeiro, data, hora, summary, description, start, end } = req.body;
+ const { nome, servico, barbeiro, data, hora, summary, description, start, end } = req.body;
 
-  let evento = {};
+ // Mapa de cores para cada barbeiro
+ const barbeiroColors = {
+  'Cláudio Monteiro': '1', // Blue
+  'André Henriques (CC)': '2', // Green
+ };
 
-  if (summary && description && start && end) {
-    // Formato estruturado (manual / recorrente)
-    evento = { summary, description, start, end };
-  } else if (nome && servico && barbeiro && data && hora) {
-    // Formato simples (cliente normal)
-    const startTime = DateTime.fromISO(`${data}T${hora}`, { zone: 'Europe/Lisbon' });
-    const endTime = startTime.plus({ minutes: 60 });
+ let evento = {};
 
-  const barbeiroColors = {
-    'Cláudio Monteiro': '1',
-    'André Henriques (CC)': '2',
+ if (summary && description && start && end) {
+  // Este é o caminho para os clientes habituais
+  const match = description.match(/Barbeiro: (.+)/);
+  const nomeDoBarbeiro = match ? match[1].trim() : null;
+
+  // Cria o objeto do evento, incluindo o colorId
+  evento = {
+   summary: `${nome} - ${servico}`,
+   description: `Barbeiro: ${barbeiro}`,
+   colorId: barbeiroColors[barbeiro],
+   start: {
+    dateTime: startTime.toISO(),
+    timeZone: 'Europe/Lisbon',
+   },
+   end: {
+    dateTime: endTime.toISO(),
+    timeZone: 'Europe/Lisbon',
+   },
   };
+ } else if (nome && servico && barbeiro && data && hora) {
+  // Este é o caminho para marcações normais (sem alteração)
+  const startTime = DateTime.fromISO(`${data}T${hora}`, { zone: 'Europe/Lisbon' });
+  const endTime = startTime.plus({ minutes: 60 });
 
   evento = {
-    summary: `${nome} - ${servico}`,
-    description: `Barbeiro: ${barbeiro}`,
-    colorId: barbeiroColors[barbeiro],
-    start: {
-      dateTime: startTime.toISO(),
-      timeZone: 'Europe/Lisbon',
-    },
-    end: {
-      dateTime: endTime.toISO(),
-      timeZone: 'Europe/Lisbon',
-    },
+   summary: `${nome} - ${servico}`,
+   description: `Barbeiro: ${barbeiro}`,
+   colorId: barbeiroColors[barbeiro],
+   start: {
+    dateTime: startTime.toISO(),
+    timeZone: 'Europe/Lisbon',
+   },
+   end: {
+    dateTime: endTime.toISO(),
+    timeZone: 'Europe/Lisbon',
+   },
   };
-  } else {
-    return res.status(400).json({ error: 'Dados em falta para criar o evento.' });
-  }
+ } else {
+  return res.status(400).json({ error: 'Dados em falta para criar o evento.' });
+ }
 
-  try {
-    const response = await calendar.events.insert({
-      calendarId: 'mhmstudio.calendar@gmail.com',
-      requestBody: evento,
-    });
+ try {
+  const response = await calendar.events.insert({
+   calendarId: 'mhmstudio.calendar@gmail.com',
+   requestBody: evento,
+  });
 
-    const iddamarcacao = response.data.id;
-    console.log('✅ Evento enviado para o Google Calendar:', iddamarcacao);
+  const iddamarcacao = response.data.id;
+  console.log('✅ Evento enviado para o Google Calendar:', iddamarcacao);
 
-    return res.status(200).json({
-      success: true,
-      eventLink: response.data.htmlLink,
-      iddamarcacao
-    });
-  } catch (error) {
-    console.error('❌ Erro ao criar evento:', error);
-    return res.status(500).json({ error: 'Erro ao criar evento no Google Calendar' });
-  }
+  return res.status(200).json({
+   success: true,
+   eventLink: response.data.htmlLink,
+   iddamarcacao
+  });
+ } catch (error) {
+  console.error('❌ Erro ao criar evento:', error);
+  return res.status(500).json({ error: 'Erro ao criar evento no Google Calendar' });
+ }
 });
 
 // 🗑 Rota para remover evento

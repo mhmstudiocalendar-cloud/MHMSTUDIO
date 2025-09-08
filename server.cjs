@@ -50,9 +50,6 @@ app.post('/adicionar-evento', async (req, res) => {
 
  if (summary && description && start && end) {
   // Este é o caminho para os clientes habituais
-  const match = description.match(/Barbeiro: (.+)/);
-  const nomeDoBarbeiro = match ? match[1].trim() : null;
-
   // Cria o objeto do evento, incluindo o colorId
   evento = {
    summary: `${nome} - ${servico}`,

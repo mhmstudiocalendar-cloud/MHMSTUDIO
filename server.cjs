@@ -48,30 +48,28 @@ app.post('/adicionar-evento', async (req, res) => {
 
  let evento = {};
 
+ // 1. Se o pedido tem 'summary' e 'description', é um evento recorrente.
  if (summary && description && start && end) {
-  // Este é o caminho para os clientes habituais
-  // Cria o objeto do evento, incluindo o colorId
+  // Extrai o nome do barbeiro da string de descrição para a cor
+  const match = description.match(/Barbeiro: (.+)/);
+  const nomeDoBarbeiro = match ? match[1].trim() : null;
+
   evento = {
-   summary: `${nome} - ${servico}`,
-   description: `Barbeiro: ${barbeiro}`,
-   colorId: barbeiroColors[barbeiro],
-   start: {
-    dateTime: startTime.toISO(),
-    timeZone: 'Europe/Lisbon',
-   },
-   end: {
-    dateTime: endTime.toISO(),
-    timeZone: 'Europe/Lisbon',
-   },
+   summary,     // Usa o summary já formatado pelo frontend
+   description,   // Usa a description já formatada pelo frontend
+   start,
+   end,
+   colorId: nomeDoBarbeiro ? barbeiroColors[nomeDoBarbeiro] : undefined,
   };
- } else if (nome && servico && barbeiro && data && hora) {
-  // Este é o caminho para marcações normais (sem alteração)
+ } 
+ // 2. Caso contrário, é um evento normal.
+ else if (nome && servico && barbeiro && data && hora) {
   const startTime = DateTime.fromISO(`${data}T${hora}`, { zone: 'Europe/Lisbon' });
   const endTime = startTime.plus({ minutes: 60 });
 
   evento = {
-   summary: `${nome} - ${servico}`,
-   description: `Barbeiro: ${barbeiro}`,
+   summary: `${nome} - ${servico}`,   // Constrói o summary aqui
+   description: `Barbeiro: ${barbeiro}`, // Constrói a description aqui
    colorId: barbeiroColors[barbeiro],
    start: {
     dateTime: startTime.toISO(),

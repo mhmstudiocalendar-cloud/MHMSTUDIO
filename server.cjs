@@ -38,12 +38,12 @@ app.get("/", (req, res) => {
 
 // 📅 Rota para criar evento
 app.post('/adicionar-evento', async (req, res) => {
- const { nome, servico, barbeiro, data, hora, summary, description, start, end } = req.body;
+ const { nome, numero, servico, barbeiro, data, hora, summary, description, start, end } = req.body;
 
  // Mapa de cores para cada barbeiro
  const barbeiroColors = {
-  'Cláudio Monteiro': '7', // Blue
-  'André Henriques (CC)': '11', // Green
+  'Cláudio Monteiro': '7',
+  'André Henriques (CC)': '11',
  };
 
  let evento = {};
@@ -68,7 +68,7 @@ app.post('/adicionar-evento', async (req, res) => {
   const endTime = startTime.plus({ minutes: 60 });
 
   evento = {
-   summary: `${nome} - ${servico}`,   // Constrói o summary aqui
+   summary: `${nome} - ${numero ? numero + " - " : ""} - ${servico}`,   // Constrói o summary aqui
    description: `Barbeiro: ${barbeiro}`, // Constrói a description aqui
    colorId: barbeiroColors[barbeiro],
    start: {
@@ -154,7 +154,7 @@ app.post("/adicionar-ausencia", async (req, res) => {
           dateTime: `${dataInicio}T${endTime}:00`,
           timeZone: tz,
         },
-        colorId: "11", // vermelho
+        colorId: "8",
       };
     } else {
       // All-day → end.date = (dataFim || dataInicio) + 1 dia
@@ -169,7 +169,7 @@ app.post("/adicionar-ausencia", async (req, res) => {
         description: `Ausência do barbeiro ${nome}`,
         start: { date: toISODate(startDate) },
         end:   { date: toISODate(endDate) },
-        colorId: "11",
+        colorId: "8",
       };
     }
 

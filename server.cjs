@@ -86,7 +86,7 @@ app.post('/adicionar-evento', async (req, res) => {
 
  try {
   const response = await calendar.events.insert({
-   calendarId: 'mhmstudio.calendar@gmail.com',
+   calendarId: 'mhmhairstudio@gmail.com',
    requestBody: evento,
   });
 
@@ -114,7 +114,7 @@ app.post("/remover-evento", async (req, res) => {
     }
 
     await calendar.events.delete({
-      calendarId: 'mhmstudio.calendar@gmail.com',
+      calendarId: 'mhmhairstudio@gmail.com',
       eventId: iddamarcacao,
     });
 
@@ -174,7 +174,7 @@ app.post("/adicionar-ausencia", async (req, res) => {
     }
 
     const response = await calendar.events.insert({
-      calendarId: 'mhmstudio.calendar@gmail.com',
+      calendarId: 'mhmhairstudio@gmail.com',
       requestBody: evento,
     });
 
@@ -202,7 +202,7 @@ app.post("/remover-ausencia", async (req, res) => {
     }
 
     await calendar.events.delete({
-      calendarId: 'mhmstudio.calendar@gmail.com',
+      calendarId: 'mhmhairstudio@gmail.com',
       eventId: idAusencia,
     });
 

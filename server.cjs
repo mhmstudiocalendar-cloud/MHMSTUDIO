@@ -42,8 +42,8 @@ app.post('/adicionar-evento', async (req, res) => {
 
  // Mapa de cores para cada barbeiro
  const barbeiroColors = {
-  'Cláudio Monteiro': '1', // Blue
-  'André Henriques (CC)': '2', // Green
+  'Cláudio Monteiro': '7', // Blue
+  'André Henriques (CC)': '11', // Green
  };
 
  let evento = {};

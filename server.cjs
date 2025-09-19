@@ -68,7 +68,7 @@ app.post('/adicionar-evento', async (req, res) => {
   const endTime = startTime.plus({ minutes: 60 });
 
   evento = {
-   summary: `${nome} - ${numero ? numero + " - " : ""} - ${servico}`,   // Constrói o summary aqui
+   summary: `${nome} - ${numero ? numero + " - " : ""}${servico}`,   // Constrói o summary aqui
    description: `Barbeiro: ${barbeiro}`, // Constrói a description aqui
    colorId: barbeiroColors[barbeiro],
    start: {

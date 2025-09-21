@@ -54,16 +54,8 @@ app.get('/health', (_req, res) => res.json({ ok: true }));
 /* ===== Criar evento (marcação) ===== */
 app.post('/adicionar-evento', async (req, res) => {
   const {
-    nome,
-    numero,
-    servico,
-    barbeiro,
-    data,
-    hora,
-    summary,
-    description,
-    start,
-    end,
+    nome, numero, servico, barbeiro, data, hora,
+    summary, description, start, end,
     durationMinutes, // 30 ou 60 (default 60)
   } = req.body;
 
@@ -71,7 +63,6 @@ app.post('/adicionar-evento', async (req, res) => {
     let evento = {};
 
     if (summary && description && start && end) {
-      // Fluxo: payload já pronto
       const match = description.match(/Barbeiro:\s*(.+)/i);
       const nomeDoBarbeiro = match ? match[1].trim() : null;
 
@@ -83,7 +74,6 @@ app.post('/adicionar-evento', async (req, res) => {
         colorId: nomeDoBarbeiro ? barbeiroColors[nomeDoBarbeiro] : undefined,
       };
     } else if (nome && servico && barbeiro && data && hora) {
-      // Fluxo: construir a partir de dados simples
       const minutes = Number(durationMinutes) || 60;
       const startTime = DateTime.fromISO(`${data}T${hora}`, { zone: TIMEZONE });
       const endTime = startTime.plus({ minutes });
@@ -93,7 +83,7 @@ app.post('/adicionar-evento', async (req, res) => {
         description: `Barbeiro: ${barbeiro}`,
         colorId: barbeiroColors[barbeiro],
         start: { dateTime: startTime.toISO(), timeZone: TIMEZONE },
-        end: { dateTime: endTime.toISO(), timeZone: TIMEZONE },
+        end:   { dateTime: endTime.toISO(),   timeZone: TIMEZONE },
       };
     } else {
       return res.status(400).json({ error: 'Dados em falta para criar o evento.' });
@@ -108,17 +98,16 @@ app.post('/adicionar-evento', async (req, res) => {
     const { id, htmlLink, iCalUID } = response.data || {};
     if (!id) {
       console.error('Evento criado mas sem ID no payload:', response.data);
-      return res
-        .status(502)
-        .json({ error: 'Evento criado mas sem ID retornado pelo Google.' });
+      return res.status(502).json({ error: 'Evento criado mas sem ID retornado pelo Google.' });
     }
 
     console.log('✅ Evento criado:', { id, iCalUID, htmlLink });
 
-    // Normalização: devolvemos sempre "id" (e não iddamarcacao)
+    // Normalização + compat: devolvemos sempre "id" e "iddamarcacao"
     return res.status(200).json({
       success: true,
       id,
+      iddamarcacao: id,      // <= compat com o teu frontend atual
       iCalUID,
       eventLink: htmlLink,
     });
@@ -160,7 +149,6 @@ app.post('/adicionar-ausencia', async (req, res) => {
     let evento;
 
     if (hora) {
-      // Ausência numa hora específica (default +1h), usando Luxon (DST-safe)
       const startDT = DateTime.fromISO(`${dataInicio}T${hora}`, { zone: TIMEZONE });
       const endDT = startDT.plus({ hours: 1 });
 
@@ -168,22 +156,19 @@ app.post('/adicionar-ausencia', async (req, res) => {
         summary: `Ausência - ${nome}`,
         description: `Ausência do barbeiro ${nome}`,
         start: { dateTime: startDT.toISO(), timeZone: TIMEZONE },
-        end: { dateTime: endDT.toISO(), timeZone: TIMEZONE },
+        end:   { dateTime: endDT.toISO(),   timeZone: TIMEZONE },
         colorId: '8',
       };
     } else {
-      // All-day — end.date é EXCLUSIVO; usar (dataFim || dataInicio) + 1 dia
       const startDate = DateTime.fromISO(`${dataInicio}`, { zone: TIMEZONE }).startOf('day');
-      const endBase = DateTime.fromISO(`${dataFim || dataInicio}`, { zone: TIMEZONE }).startOf(
-        'day'
-      );
+      const endBase = DateTime.fromISO(`${dataFim || dataInicio}`, { zone: TIMEZONE }).startOf('day');
       const endDate = endBase.plus({ days: 1 });
 
       evento = {
         summary: `Ausência - ${nome}`,
         description: `Ausência do barbeiro ${nome}`,
         start: { date: startDate.toISODate() },
-        end: { date: endDate.toISODate() },
+        end:   { date: endDate.toISODate() },
         colorId: '8',
       };
     }
@@ -197,17 +182,16 @@ app.post('/adicionar-ausencia', async (req, res) => {
     const { id, htmlLink, iCalUID } = response.data || {};
     if (!id) {
       console.error('Ausência criada mas sem ID no payload:', response.data);
-      return res
-        .status(502)
-        .json({ error: 'Ausência criada mas sem ID retornado pelo Google.' });
+      return res.status(502).json({ error: 'Ausência criada mas sem ID retornado pelo Google.' });
     }
 
     console.log('✅ Ausência criada:', { id, iCalUID, htmlLink });
 
-    // Normalização: também devolvemos "id"
     return res.status(200).json({
       success: true,
       id,
+      idAusencia: id,        // compat opcional
+      iddamarcacao: id,      // compat extra se o frontend reaproveitar lógica
       iCalUID,
       eventLink: htmlLink,
     });

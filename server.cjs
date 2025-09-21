@@ -7,9 +7,6 @@ const { google } = require('googleapis');
 const { DateTime } = require('luxon');
 require('dotenv').config();
 
-/* ===== Versão p/ debug rápido ===== */
-const SERVER_VERSION = process.env.SERVER_VERSION || 'v1.2-idd-compat';
-
 /* ===== Credenciais do serviço ===== */
 const credentials = {
   type: process.env.GOOGLE_TYPE,
@@ -36,11 +33,10 @@ const calendar = google.calendar({ version: 'v3', auth });
 
 /* ===== App ===== */
 const app = express();
-app.use(cors({ origin: true, credentials: true }));
+app.use(cors());
 app.use(express.json());
-app.options('*', cors());
 
-/* ===== Constantes ===== */
+/* ===== Helpers ===== */
 const CALENDAR_ID = 'mhmhairstudio@gmail.com';
 const TIMEZONE = 'Europe/Lisbon';
 
@@ -49,12 +45,11 @@ const barbeiroColors = {
   'André Henriques (CC)': '11',
 };
 
-/* ===== Rotas utilitárias ===== */
-app.get('/', (_req, res) => res.send('Servidor do MHMSTUDIO está ativo 🚀'));
+/* ===== Rota de saúde/raiz ===== */
+app.get('/', (_req, res) => {
+  res.send('Servidor do MHMSTUDIO está ativo 🚀');
+});
 app.get('/health', (_req, res) => res.json({ ok: true }));
-app.get('/version', (_req, res) =>
-  res.json({ version: SERVER_VERSION, time: new Date().toISOString() })
-);
 
 /* ===== Criar evento (marcação) ===== */
 app.post('/adicionar-evento', async (req, res) => {
@@ -68,7 +63,6 @@ app.post('/adicionar-evento', async (req, res) => {
     let evento = {};
 
     if (summary && description && start && end) {
-      // payload já pronto
       const match = description.match(/Barbeiro:\s*(.+)/i);
       const nomeDoBarbeiro = match ? match[1].trim() : null;
 
@@ -80,7 +74,6 @@ app.post('/adicionar-evento', async (req, res) => {
         colorId: nomeDoBarbeiro ? barbeiroColors[nomeDoBarbeiro] : undefined,
       };
     } else if (nome && servico && barbeiro && data && hora) {
-      // construir a partir de dados simples
       const minutes = Number(durationMinutes) || 60;
       const startTime = DateTime.fromISO(`${data}T${hora}`, { zone: TIMEZONE });
       const endTime = startTime.plus({ minutes });
@@ -99,7 +92,7 @@ app.post('/adicionar-evento', async (req, res) => {
     const response = await calendar.events.insert({
       calendarId: CALENDAR_ID,
       requestBody: evento,
-      fields: 'id,htmlLink,iCalUID', // traz só o que precisamos
+      fields: 'id,htmlLink,iCalUID',
     });
 
     const { id, htmlLink, iCalUID } = response.data || {};
@@ -114,7 +107,7 @@ app.post('/adicionar-evento', async (req, res) => {
     return res.status(200).json({
       success: true,
       id,
-      iddamarcacao: id, // compat com frontend
+      iddamarcacao: id,      // <= compat com o teu frontend atual
       iCalUID,
       eventLink: htmlLink,
     });
@@ -124,13 +117,19 @@ app.post('/adicionar-evento', async (req, res) => {
   }
 });
 
-/* ===== Remover evento (aceita id ou iddamarcacao) ===== */
+/* ===== Remover evento (compatível id/iddamarcacao) ===== */
 app.post('/remover-evento', async (req, res) => {
   try {
     const id = req.body.id || req.body.iddamarcacao;
-    if (!id) return res.status(400).json({ error: 'Falta o id do evento Google Calendar' });
+    if (!id) {
+      return res.status(400).json({ error: 'Falta o id do evento Google Calendar' });
+    }
 
-    await calendar.events.delete({ calendarId: CALENDAR_ID, eventId: id });
+    await calendar.events.delete({
+      calendarId: CALENDAR_ID,
+      eventId: id,
+    });
+
     return res.json({ success: true });
   } catch (error) {
     console.error('Erro ao remover evento do Google Calendar:', error?.response?.data || error);
@@ -142,14 +141,17 @@ app.post('/remover-evento', async (req, res) => {
 app.post('/adicionar-ausencia', async (req, res) => {
   try {
     const { nome, dataInicio, dataFim, hora } = req.body;
-    if (!nome || !dataInicio) return res.status(400).json({ error: 'Dados insuficientes' });
+
+    if (!nome || !dataInicio) {
+      return res.status(400).json({ error: 'Dados insuficientes' });
+    }
 
     let evento;
 
     if (hora) {
-      // ausência numa hora específica (+1h)
       const startDT = DateTime.fromISO(`${dataInicio}T${hora}`, { zone: TIMEZONE });
       const endDT = startDT.plus({ hours: 1 });
+
       evento = {
         summary: `Ausência - ${nome}`,
         description: `Ausência do barbeiro ${nome}`,
@@ -158,10 +160,9 @@ app.post('/adicionar-ausencia', async (req, res) => {
         colorId: '8',
       };
     } else {
-      // all-day (end.date é exclusivo)
       const startDate = DateTime.fromISO(`${dataInicio}`, { zone: TIMEZONE }).startOf('day');
-      const endBase   = DateTime.fromISO(`${dataFim || dataInicio}`, { zone: TIMEZONE }).startOf('day');
-      const endDate   = endBase.plus({ days: 1 });
+      const endBase = DateTime.fromISO(`${dataFim || dataInicio}`, { zone: TIMEZONE }).startOf('day');
+      const endDate = endBase.plus({ days: 1 });
 
       evento = {
         summary: `Ausência - ${nome}`,
@@ -189,8 +190,8 @@ app.post('/adicionar-ausencia', async (req, res) => {
     return res.status(200).json({
       success: true,
       id,
-      idAusencia: id,   // compat com UI de ausências
-      iddamarcacao: id, // compat extra (se a UI reutilizar lógica)
+      idAusencia: id,        // compat opcional
+      iddamarcacao: id,      // compat extra se o frontend reaproveitar lógica
       iCalUID,
       eventLink: htmlLink,
     });
@@ -200,13 +201,19 @@ app.post('/adicionar-ausencia', async (req, res) => {
   }
 });
 
-/* ===== Remover ausência (aceita id, idAusencia, iddamarcacao) ===== */
+/* ===== Remover ausência (compatível id/idAusencia) ===== */
 app.post('/remover-ausencia', async (req, res) => {
   try {
-    const id = req.body.id || req.body.idAusencia || req.body.iddamarcacao;
-    if (!id) return res.status(400).json({ error: 'Falta o id da ausência do Google Calendar' });
+    const id = req.body.id || req.body.idAusencia;
+    if (!id) {
+      return res.status(400).json({ error: 'Falta o id da ausência do Google Calendar' });
+    }
 
-    await calendar.events.delete({ calendarId: CALENDAR_ID, eventId: id });
+    await calendar.events.delete({
+      calendarId: CALENDAR_ID,
+      eventId: id,
+    });
+
     return res.json({ success: true });
   } catch (error) {
     console.error('Erro ao remover ausência do Google Calendar:', error?.response?.data || error);
@@ -217,5 +224,5 @@ app.post('/remover-ausencia', async (req, res) => {
 /* ===== Start server ===== */
 const PORT = process.env.PORT || 8085;
 app.listen(PORT, () => {
-  console.log(`🚀 Servidor a correr na porta ${PORT} — ${SERVER_VERSION}`);
+  console.log(`🚀 Servidor a correr na porta ${PORT}`);
 });

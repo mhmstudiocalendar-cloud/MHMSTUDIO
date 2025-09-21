@@ -37,72 +37,61 @@ app.get("/", (req, res) => {
 });
 
 // 📅 Rota para criar evento
+// 📅 Rota para criar evento
 app.post('/adicionar-evento', async (req, res) => {
- const { nome, numero, servico, barbeiro, data, hora, summary, description, start, end } = req.body;
+  const {
+    nome, numero, servico, barbeiro, data, hora,
+    summary, description, start, end,
+    durationMinutes // <- NOVO: 30 ou 60
+  } = req.body;
 
- // Mapa de cores para cada barbeiro
- const barbeiroColors = {
-  'Cláudio Monteiro': '7',
-  'André Henriques (CC)': '11',
- };
-
- let evento = {};
-
- // 1. Se o pedido tem 'summary' e 'description', é um evento recorrente.
- if (summary && description && start && end) {
-  // Extrai o nome do barbeiro da string de descrição para a cor
-  const match = description.match(/Barbeiro: (.+)/);
-  const nomeDoBarbeiro = match ? match[1].trim() : null;
-
-  evento = {
-   summary,     // Usa o summary já formatado pelo frontend
-   description,   // Usa a description já formatada pelo frontend
-   start,
-   end,
-   colorId: nomeDoBarbeiro ? barbeiroColors[nomeDoBarbeiro] : undefined,
+  const barbeiroColors = {
+    'Cláudio Monteiro': '7',
+    'André Henriques (CC)': '11',
   };
- } 
- // 2. Caso contrário, é um evento normal.
- else if (nome && servico && barbeiro && data && hora) {
-  const startTime = DateTime.fromISO(`${data}T${hora}`, { zone: 'Europe/Lisbon' });
-  const endTime = startTime.plus({ minutes: 60 });
 
-  evento = {
-   summary: `${nome} - ${numero ? numero + " - " : ""}${servico}`,   // Constrói o summary aqui
-   description: `Barbeiro: ${barbeiro}`, // Constrói a description aqui
-   colorId: barbeiroColors[barbeiro],
-   start: {
-    dateTime: startTime.toISO(),
-    timeZone: 'Europe/Lisbon',
-   },
-   end: {
-    dateTime: endTime.toISO(),
-    timeZone: 'Europe/Lisbon',
-   },
-  };
- } else {
-  return res.status(400).json({ error: 'Dados em falta para criar o evento.' });
- }
+  let evento = {};
 
- try {
-  const response = await calendar.events.insert({
-   calendarId: 'mhmhairstudio@gmail.com',
-   requestBody: evento,
-  });
+  if (summary && description && start && end) {
+    const match = description.match(/Barbeiro: (.+)/);
+    const nomeDoBarbeiro = match ? match[1].trim() : null;
 
-  const iddamarcacao = response.data.id;
-  console.log('✅ Evento enviado para o Google Calendar:', iddamarcacao);
+    evento = {
+      summary,
+      description,
+      start,
+      end,
+      colorId: nomeDoBarbeiro ? barbeiroColors[nomeDoBarbeiro] : undefined,
+    };
+  } else if (nome && servico && barbeiro && data && hora) {
+    const minutes = Number(durationMinutes) || 60; // fallback 60
+    const startTime = DateTime.fromISO(`${data}T${hora}`, { zone: 'Europe/Lisbon' });
+    const endTime = startTime.plus({ minutes });
 
-  return res.status(200).json({
-   success: true,
-   eventLink: response.data.htmlLink,
-   iddamarcacao
-  });
- } catch (error) {
-  console.error('❌ Erro ao criar evento:', error);
-  return res.status(500).json({ error: 'Erro ao criar evento no Google Calendar' });
- }
+    evento = {
+      summary: `${nome} - ${numero ? numero + " - " : ""}${servico}`,
+      description: `Barbeiro: ${barbeiro}`,
+      colorId: barbeiroColors[barbeiro],
+      start: { dateTime: startTime.toISO(), timeZone: 'Europe/Lisbon' },
+      end:   { dateTime: endTime.toISO(),   timeZone: 'Europe/Lisbon' },
+    };
+  } else {
+    return res.status(400).json({ error: 'Dados em falta para criar o evento.' });
+  }
+
+  try {
+    const response = await calendar.events.insert({
+      calendarId: 'mhmhairstudio@gmail.com',
+      requestBody: evento,
+    });
+    const iddamarcacao = response.data.id;
+    return res.status(200).json({ success: true, eventLink: response.data.htmlLink, iddamarcacao });
+  } catch (error) {
+    console.error('❌ Erro ao criar evento:', error);
+    return res.status(500).json({ error: 'Erro ao criar evento no Google Calendar' });
+  }
 });
+
 
 // 🗑 Rota para remover evento
 app.post("/remover-evento", async (req, res) => {

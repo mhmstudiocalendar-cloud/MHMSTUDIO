@@ -150,7 +150,7 @@ app.post('/adicionar-ausencia', async (req, res) => {
 
     if (hora) {
       const startDT = DateTime.fromISO(`${dataInicio}T${hora}`, { zone: TIMEZONE });
-      const endDT = startDT.plus({ hours: 1 });
+      const endDT = startDT.plus({ minutes: 30 });
 
       evento = {
         summary: `Ausência - ${nome}`,

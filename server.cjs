@@ -185,6 +185,12 @@ app.post('/adicionar-evento', async (req, res) => {
   try {
     let evento = {};
 
+    console.log('Recebido:', {
+      nome, numero, servico, barbeiro, data, hora,
+      summary, description, start, end,
+      durationMinutes, bookingType, secondPersonInfo, secondPersonBarber
+    });
+
     // Se a descrição e os horários estiverem completos
     if (summary && description && start && end) {
       const match = description.match(/Barbeiro:\s*(.+)/i);
@@ -197,6 +203,8 @@ app.post('/adicionar-evento', async (req, res) => {
         end,
         colorId: nomeDoBarbeiro ? barbeiroColors[nomeDoBarbeiro] : undefined,
       };
+
+      console.log('Evento com dados completos:', evento);
     } else if (nome && servico && barbeiro && data && hora) {
       const minutes = Number(durationMinutes) || 60;
       const startTime = DateTime.fromISO(`${data}T${hora}`, { zone: TIMEZONE });
@@ -211,8 +219,10 @@ app.post('/adicionar-evento', async (req, res) => {
         end:   { dateTime: endTime.toISO(),   timeZone: TIMEZONE },
       };
 
+      console.log('Evento para o primeiro cliente:', evento);
+
       if (bookingType === 'familiar') {
-        // Se for uma marcação familiar, criamos dois eventos - um para cada cliente
+        console.log('Criando eventos para uma marcação familiar...');
 
         // Primeiro cliente
         const firstStartTime = DateTime.fromISO(`${data}T${hora}`, { zone: TIMEZONE });
@@ -225,6 +235,8 @@ app.post('/adicionar-evento', async (req, res) => {
           start: { dateTime: firstStartTime.toISO(), timeZone: TIMEZONE },
           end:   { dateTime: firstEndTime.toISO(),   timeZone: TIMEZONE },
         };
+
+        console.log('Criando evento para o primeiro cliente:', firstEvento);
 
         // Criar evento para o primeiro cliente
         const firstResponse = await calendar.events.insert({
@@ -247,11 +259,13 @@ app.post('/adicionar-evento', async (req, res) => {
 
         const secondEvento = {
           summary: `${secondPersonInfo.name} - ${secondPersonInfo.phone ? `${secondPersonInfo.phone} - ` : ''}${servico}`,
-          description: `Barbeiro: ${secondPersonBarber}`,
-          colorId: barbeiroColors[secondPersonBarber],
+          description: `Barbeiro: ${secondPersonBarber}`, // Garantir que o barbeiro correto é passado
+          colorId: barbeiroColors[secondPersonBarber], // Atribuindo o barbeiro correto para o segundo cliente
           start: { dateTime: secondStartTime.toISO(), timeZone: TIMEZONE },
           end:   { dateTime: secondEndTime.toISO(),   timeZone: TIMEZONE },
         };
+
+        console.log('Criando evento para o segundo cliente:', secondEvento);
 
         // Criar evento para o segundo cliente
         const secondResponse = await calendar.events.insert({
@@ -285,7 +299,7 @@ app.post('/adicionar-evento', async (req, res) => {
       return res.status(502).json({ error: 'Evento criado mas sem ID retornado pelo Google.' });
     }
 
-    console.log('✅ Evento criado:', { id, iCalUID, htmlLink });
+    console.log('✅ Evento criado para o primeiro cliente:', { id, iCalUID, htmlLink });
 
     // Normalização + compat: devolvemos sempre "id" e "iddamarcacao"
     return res.status(200).json({

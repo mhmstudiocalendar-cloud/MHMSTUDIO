@@ -183,13 +183,9 @@ app.post('/adicionar-evento', async (req, res) => {
   } = req.body;
 
   try {
-    let evento = {};
+    console.log('Dados recebidos para criar o evento:', req.body);
 
-    console.log('Recebido:', {
-      nome, numero, servico, barbeiro, data, hora,
-      summary, description, start, end,
-      durationMinutes, bookingType, secondPersonInfo, secondPersonBarber
-    });
+    let evento = {};
 
     // Se a descrição e os horários estiverem completos
     if (summary && description && start && end) {

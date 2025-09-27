@@ -57,12 +57,16 @@ app.post('/adicionar-evento', async (req, res) => {
     nome, numero, servico, barbeiro, data, hora,
     summary, description, start, end,
     durationMinutes, // 30 ou 60 (default 60)
+    bookingType, // Tipos de marcação: individual | familiar
+    secondPersonInfo, // Informações do segundo cliente (para marcações familiares)
+    secondPersonBarber, // Barbeiro do segundo cliente
   } = req.body;
 
   try {
     let evento = {};
 
     if (summary && description && start && end) {
+      // Se um resumo e descrição forem passados, assume-se que são informações completas para o evento
       const match = description.match(/Barbeiro:\s*(.+)/i);
       const nomeDoBarbeiro = match ? match[1].trim() : null;
 
@@ -78,6 +82,7 @@ app.post('/adicionar-evento', async (req, res) => {
       const startTime = DateTime.fromISO(`${data}T${hora}`, { zone: TIMEZONE });
       const endTime = startTime.plus({ minutes });
 
+      // Caso seja uma marcação individual, cria o evento normal
       evento = {
         summary: `${nome} - ${numero ? `${numero} - ` : ''}${servico}`,
         description: `Barbeiro: ${barbeiro}`,
@@ -85,10 +90,40 @@ app.post('/adicionar-evento', async (req, res) => {
         start: { dateTime: startTime.toISO(), timeZone: TIMEZONE },
         end:   { dateTime: endTime.toISO(),   timeZone: TIMEZONE },
       };
+
+      if (bookingType === 'familiar') {
+        // Se for uma marcação familiar, criamos um evento para o segundo barbeiro
+        const secondStartTime = DateTime.fromISO(`${data}T${hora}`, { zone: TIMEZONE });
+        const secondEndTime = secondStartTime.plus({ minutes });
+
+        const secondEvento = {
+          summary: `${secondPersonInfo.name} - ${secondPersonInfo.phone ? `${secondPersonInfo.phone} - ` : ''}${servico}`,
+          description: `Barbeiro: ${secondPersonBarber}`,
+          colorId: barbeiroColors[secondPersonBarber],
+          start: { dateTime: secondStartTime.toISO(), timeZone: TIMEZONE },
+          end:   { dateTime: secondEndTime.toISO(),   timeZone: TIMEZONE },
+        };
+
+        // Criar evento para o segundo barbeiro
+        const secondResponse = await calendar.events.insert({
+          calendarId: CALENDAR_ID,
+          requestBody: secondEvento,
+          fields: 'id,htmlLink,iCalUID',
+        });
+
+        const { id: secondId, htmlLink: secondLink, iCalUID: secondIcalUID } = secondResponse.data || {};
+        if (!secondId) {
+          console.error('Evento para o segundo cliente criado mas sem ID no payload:', secondResponse.data);
+          return res.status(502).json({ error: 'Evento do segundo cliente criado mas sem ID retornado pelo Google.' });
+        }
+
+        console.log('✅ Evento do segundo cliente criado:', { secondId, secondIcalUID, secondLink });
+      }
     } else {
       return res.status(400).json({ error: 'Dados em falta para criar o evento.' });
     }
 
+    // Criar evento no Google Calendar
     const response = await calendar.events.insert({
       calendarId: CALENDAR_ID,
       requestBody: evento,

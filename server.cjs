@@ -3,6 +3,7 @@
 const express = require('express');
 const cors = require('cors');
 const { google } = require('googleapis');
+const { Resend } = require('resend');
 const { DateTime } = require('luxon');
 require('dotenv').config();
 
@@ -31,6 +32,37 @@ const auth = new google.auth.GoogleAuth({
 const calendar = google.calendar({ version: 'v3', auth });
 
 /* ===== App ===== */
+// === Email (Resend) ===
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+// html simples para o email
+function confirmationHtml({
+  customerName,
+  date,
+  time,
+  serviceName,
+  barberName,
+  isFamily,
+  secondPersonName,
+}) {
+  return `
+    <div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#111;line-height:1.5">
+      <h2>Confirmação de Marcação</h2>
+      <p>Olá <strong>${customerName}</strong>,</p>
+      <p>A sua marcação foi confirmada:</p>
+      <ul>
+        <li><strong>Data:</strong> ${date}</li>
+        <li><strong>Hora:</strong> ${time}</li>
+        <li><strong>Serviço:</strong> ${serviceName}</li>
+        <li><strong>Barbeiro:</strong> ${barberName}</li>
+      </ul>
+      ${isFamily ? `<p><strong>Marcação Dupla/Familiar</strong><br/>2.º Cliente: ${secondPersonName || '—'}</p>` : ''}
+      <p>Se precisar de alterar ou cancelar, responda a este e-mail.</p>
+      <p>Obrigado,<br/>MHM Studio</p>
+    </div>
+  `;
+}
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -71,6 +103,53 @@ app.get('/', (_req, res) => {
 app.get('/health', (_req, res) => res.json({ ok: true }));
 
 /* ===== Criar evento (marcação) (CORRIGIDO) ===== */
+
+/* ===== Enviar email de confirmação ===== */
+app.post('/send-confirmation', async (req, res) => {
+  try {
+    const {
+      toEmail,           // email do cliente
+      customerName,      // nome do cliente
+      date,              // dd/MM/yyyy
+      time,              // HH:mm
+      serviceName,
+      barberName,
+      isFamily,          // boolean
+      secondPersonName,  // opcional
+    } = req.body || {};
+
+    if (!toEmail) {
+      return res.status(400).json({ ok: false, message: 'toEmail é obrigatório.' });
+    }
+
+    const subject = `Confirmação: ${date} às ${time} — ${serviceName}`;
+    const { data, error } = await resend.emails.send({
+      from: 'MHM Studio <no-reply@mhmstudio.pt>',
+      to: [toEmail],
+      subject,
+      html: confirmationHtml({
+        customerName,
+        date,
+        time,
+        serviceName,
+        barberName,
+        isFamily,
+        secondPersonName,
+      }),
+    });
+
+    if (error) {
+      console.error('Erro Resend:', error);
+      return res.status(500).json({ ok: false, message: 'Falha ao enviar o e-mail.' });
+    }
+    res.json({ ok: true, id: data?.id });
+  } catch (e) {
+    console.error('Erro /send-confirmation:', e);
+    res.status(500).json({ ok: false, message: e?.message || 'Erro interno.' });
+  }
+});
+
+
 app.post('/adicionar-evento', async (req, res) => {
   const {
     nome, numero, servico, barbeiro, data, hora,

@@ -42,7 +42,7 @@ function confirmationHtml({
   time,
   serviceName,
   barberName,
-  secondPersonBarber,
+  barberName2,
   isFamily,
   secondPersonName,
 }) {
@@ -55,7 +55,7 @@ function confirmationHtml({
       <p><strong>Data:</strong> ${date}</p>
       <p><strong>Hora:</strong> ${time}</p>
       <p><strong>Serviço:</strong> ${serviceName}</p>
-      <p><strong>Barbeiro(s):</strong> ${barberName}${isFamily ? ` e ${secondPersonBarber}` : ''}</p>
+      <p><strong>Barbeiro(s):</strong> ${barberName}${isFamily ? ` e ${barberName2}` : ''}</p>
           
       <p>Se precisar de alterar ou cancelar a marcação, por favor entre em contato pelo telefone: <strong>+351 210 165 258</strong>.</p>
       <p>Obrigado,<br/>MHM Studio</p>
@@ -199,6 +199,7 @@ const emailSent = await resend.emails.send({
     time: hora,
     serviceName: servico,
     barberName: barbeiro,
+    barberName2: barberName2,
     isFamily: bookingType === 'familiar',
     secondPersonName: secondPersonInfo ? secondPersonInfo.name : '',
   }),

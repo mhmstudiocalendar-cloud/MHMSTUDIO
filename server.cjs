@@ -44,19 +44,31 @@ function confirmationHtml({
   barberName,
   isFamily,
   secondPersonName,
+  secondPersonPhone,
+  secondPersonEmail,
 }) {
   return `
     <div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#111;line-height:1.5">
       <h2>Confirmação de Marcação</h2>
       <p>Olá <strong>${customerName}</strong>,</p>
       <p>A sua marcação foi confirmada:</p>
-      <ul>
+      <ul style="list-style-type: none; padding-left: 0;">
         <li><strong>Data:</strong> ${date}</li>
         <li><strong>Hora:</strong> ${time}</li>
         <li><strong>Serviço:</strong> ${serviceName}</li>
         <li><strong>Barbeiro:</strong> ${barberName}</li>
       </ul>
-      ${isFamily ? `<p><strong>Marcação Dupla/Familiar</strong><br/>2.º Cliente: ${secondPersonName || '—'}</p>` : ''}
+      
+      ${isFamily ? `
+        <div style="margin-top: 20px; padding: 10px; border-top: 1px solid #ccc;">
+          <h3>Detalhes do Segundo Cliente:</h3>
+          <ul style="list-style-type: none; padding-left: 0;">
+            <li><strong>Nome:</strong> ${secondPersonName || 'Não fornecido'}</li>
+            <li><strong>Telefone:</strong> ${secondPersonPhone || 'Não fornecido'}</li>
+            <li><strong>E-mail:</strong> ${secondPersonEmail || 'Não fornecido'}</li>
+          </ul>
+        </div>` : ''}
+      
       <p>Se precisar de alterar ou cancelar, responda a este e-mail.</p>
       <p>Obrigado,<br/>MHM Studio</p>
     </div>

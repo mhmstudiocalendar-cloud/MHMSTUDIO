@@ -181,37 +181,34 @@ app.post('/adicionar-evento', async (req, res) => {
     
     // O evento principal é sempre o primeiro evento criado, seja individual ou familiar
     const mainEvent = createdEvents[0];
+    
+  if (toEmail) {
+    const subject = `Confirmação: ${data} às ${hora} — ${servico}`;
+    const emailSent = await resend.emails.send({
+      from: 'MHM Studio <no-reply@mhmstudio.pt>',
+      to: [toEmail], // Enviar para o e-mail do cliente
+      subject,
+      html: confirmationHtml({
+        customerName: nome,
+        date: data,
+        time: hora,
+        serviceName: servico,
+        barberName: barbeiro,
+        barberName2: bookingType === 'familiar' ? secondPersonBarber : undefined,
+        isFamily: bookingType === 'familiar',
+        secondPersonName: secondPersonInfo ? secondPersonInfo.name : '',
+      }),
+    });
 
-// Antes de tentar enviar o e-mail, verifique se `toEmail` está presente
-if (!toEmail) {
-  console.error('Erro: E-mail do cliente não fornecido.');
-  return res.status(400).json({ ok: false, message: 'E-mail do cliente não fornecido.' });
-}
+    if (emailSent.error) {
+      console.error('Erro ao enviar e-mail:', emailSent.error);
+      return res.status(500).json({ ok: false, message: 'Falha ao enviar o e-mail.' });
+    }
 
-const subject = `Confirmação: ${data} às ${hora} — ${servico}`;
-const emailSent = await resend.emails.send({
-  from: 'MHM Studio <no-reply@mhmstudio.pt>',
-  to: [toEmail], // Enviar para o e-mail do cliente
-  subject,
-  html: confirmationHtml({
-    customerName: nome,
-    date: data,
-    time: hora,
-    serviceName: servico,
-    barberName: barbeiro,
-    barberName2: bookingType === 'familiar' ? secondPersonBarber : undefined,
-    isFamily: bookingType === 'familiar',
-    secondPersonName: secondPersonInfo ? secondPersonInfo.name : '',
-  }),
-});
-
-if (emailSent.error) {
-  console.error('Erro ao enviar e-mail:', emailSent.error);
-  return res.status(500).json({ ok: false, message: 'Falha ao enviar o e-mail.' });
-}
-
-console.log('✅ E-mail de confirmação enviado');
-
+    console.log('✅ E-mail de confirmação enviado');
+  } else {
+    console.log('✅ O cliente não escolheu receber o e-mail de confirmação');
+  }
 
     if (emailSent.error) {
       console.error('Erro ao enviar e-mail:', emailSent.error || emailSent);

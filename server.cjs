@@ -199,8 +199,10 @@ app.post('/adicionar-evento', async (req, res) => {
       }),
     });
 
+    console.log('Enviando e-mail para:', toEmail);
+
     if (emailSent.error) {
-      console.error('Erro ao enviar e-mail:', emailSent.error);
+      console.error('Erro ao enviar e-mail:', emailSent.error || emailSent);
       return res.status(500).json({ ok: false, message: 'Falha ao enviar o e-mail.' });
     }
 

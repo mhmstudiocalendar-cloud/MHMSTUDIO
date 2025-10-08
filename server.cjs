@@ -103,53 +103,6 @@ app.get('/', (_req, res) => {
 app.get('/health', (_req, res) => res.json({ ok: true }));
 
 /* ===== Criar evento (marcação) (CORRIGIDO) ===== */
-
-/* ===== Enviar email de confirmação ===== */
-app.post('/send-confirmation', async (req, res) => {
-  try {
-    const {
-      toEmail,           // email do cliente
-      customerName,      // nome do cliente
-      date,              // dd/MM/yyyy
-      time,              // HH:mm
-      serviceName,
-      barberName,
-      isFamily,          // boolean
-      secondPersonName,  // opcional
-    } = req.body || {};
-
-    if (!toEmail) {
-      return res.status(400).json({ ok: false, message: 'toEmail é obrigatório.' });
-    }
-
-    const subject = `Confirmação: ${date} às ${time} — ${serviceName}`;
-    const { data, error } = await resend.emails.send({
-      from: 'MHM Studio <no-reply@mhmstudio.pt>',
-      to: [toEmail],
-      subject,
-      html: confirmationHtml({
-        customerName,
-        date,
-        time,
-        serviceName,
-        barberName,
-        isFamily,
-        secondPersonName,
-      }),
-    });
-
-    if (error) {
-      console.error('Erro Resend:', error);
-      return res.status(500).json({ ok: false, message: 'Falha ao enviar o e-mail.' });
-    }
-    res.json({ ok: true, id: data?.id });
-  } catch (e) {
-    console.error('Erro /send-confirmation:', e);
-    res.status(500).json({ ok: false, message: e?.message || 'Erro interno.' });
-  }
-});
-
-
 app.post('/adicionar-evento', async (req, res) => {
   const {
     nome, numero, servico, barbeiro, data, hora,
@@ -158,6 +111,7 @@ app.post('/adicionar-evento', async (req, res) => {
     bookingType,     // Tipos de marcação: individual | familiar
     secondPersonInfo, // Informações do segundo cliente (para marcações familiares)
     secondPersonBarber, // Barbeiro do segundo cliente
+    toEmail,          // Email do cliente para enviar a confirmação
   } = req.body;
 
   try {
@@ -228,6 +182,30 @@ app.post('/adicionar-evento', async (req, res) => {
     // O evento principal é sempre o primeiro evento criado, seja individual ou familiar
     const mainEvent = createdEvents[0];
 
+    // Enviar o e-mail de confirmação para o cliente
+    const subject = `Confirmação: ${data} às ${hora} — ${servico}`;
+    const emailSent = await resend.emails.send({
+      from: 'MHM Studio <no-reply@mhmstudio.pt>',
+      to: [toEmail], // Enviar para o e-mail do cliente
+      subject,
+      html: confirmationHtml({
+        customerName: nome,
+        date: data,
+        time: hora,
+        serviceName: servico,
+        barberName: barbeiro,
+        isFamily: bookingType === 'familiar',
+        secondPersonName: secondPersonInfo ? secondPersonInfo.name : '',
+      }),
+    });
+
+    if (emailSent.error) {
+      console.error('Erro ao enviar e-mail:', emailSent.error);
+      return res.status(500).json({ ok: false, message: 'Falha ao enviar o e-mail.' });
+    }
+
+    console.log('✅ E-mail de confirmação enviado');
+
     // Normalização + compat: devolvemos o ID principal e, opcionalmente, todos os IDs
     return res.status(200).json({
       success: true,
@@ -235,7 +213,6 @@ app.post('/adicionar-evento', async (req, res) => {
       iddamarcacao: mainEvent.id,      // compat com o teu frontend atual
       iCalUID: mainEvent.iCalUID,
       eventLink: mainEvent.htmlLink,
-      // Devolve os IDs de todos os eventos criados, útil para remover ambos
       createdEvents: createdEvents.map(e => ({ id: e.id, iCalUID: e.iCalUID, link: e.htmlLink })), 
     });
 

@@ -181,7 +181,7 @@ app.post('/adicionar-evento', async (req, res) => {
     
     // O evento principal é sempre o primeiro evento criado, seja individual ou familiar
     const mainEvent = createdEvents[0];
-    
+
   if (toEmail) {
     const subject = `Confirmação: ${data} às ${hora} — ${servico}`;
     const emailSent = await resend.emails.send({
@@ -209,14 +209,7 @@ app.post('/adicionar-evento', async (req, res) => {
   } else {
     console.log('✅ O cliente não escolheu receber o e-mail de confirmação');
   }
-
-    if (emailSent.error) {
-      console.error('Erro ao enviar e-mail:', emailSent.error || emailSent);
-      return res.status(500).json({ ok: false, message: 'Falha ao enviar o e-mail.' });
-    }
-
-    console.log('✅ E-mail de confirmação enviado');
-
+  
     // Normalização + compat: devolvemos o ID principal e, opcionalmente, todos os IDs
     return res.status(200).json({
       success: true,

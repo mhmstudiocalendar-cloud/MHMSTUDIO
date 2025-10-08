@@ -199,7 +199,7 @@ const emailSent = await resend.emails.send({
     time: hora,
     serviceName: servico,
     barberName: barbeiro,
-    barberName2: barberName2,
+    barberName2: bookingType === 'familiar' ? barberName2 : undefined,
     isFamily: bookingType === 'familiar',
     secondPersonName: secondPersonInfo ? secondPersonInfo.name : '',
   }),

@@ -55,9 +55,9 @@ function confirmationHtml({
       <p><strong>Data:</strong> ${date}</p>
       <p><strong>Hora:</strong> ${time}</p>
       <p><strong>Serviço:</strong> ${serviceName}</p>
-      <p><strong>Barbeiro(s):</strong> ${barberName} e ${barberName}</p>
+      <p><strong>Barbeiro(s):</strong> ${barberName}${isFamily ? ` e ${barberName2}` : ''}</p>
           
-      <p>Se precisar de alterar ou cancelar a marcação, por favor entre em contato pelo telefone: <strong>210 165 258</strong>.</p>
+      <p>Se precisar de alterar ou cancelar a marcação, por favor entre em contato pelo telefone: <strong>+351 210 165 258</strong>.</p>
       <p>Obrigado,<br/>MHM Studio</p>
     </div>
   `;

@@ -42,7 +42,7 @@ function confirmationHtml({
   time,
   serviceName,
   barberName,
-  barberName2,
+  secondPersonBarber,
   isFamily,
   secondPersonName,
 }) {
@@ -55,14 +55,13 @@ function confirmationHtml({
       <p><strong>Data:</strong> ${date}</p>
       <p><strong>Hora:</strong> ${time}</p>
       <p><strong>Serviço:</strong> ${serviceName}</p>
-      <p><strong>Barbeiro(s):</strong> ${barberName}${isFamily ? ` e ${barberName2}` : ''}</p>
+      <p><strong>Barbeiro(s):</strong> ${barberName}${isFamily ? ` e ${secondPersonBarber}` : ''}</p>
           
       <p>Se precisar de alterar ou cancelar a marcação, por favor entre em contato pelo telefone: <strong>+351 210 165 258</strong>.</p>
       <p>Obrigado,<br/>MHM Studio</p>
     </div>
   `;
 }
-
 
 const app = express();
 app.use(cors());

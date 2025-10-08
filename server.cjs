@@ -42,28 +42,22 @@ function confirmationHtml({
   time,
   serviceName,
   barberName,
+  barberName2,
   isFamily,
   secondPersonName,
-  secondPersonPhone,
 }) {
   return `
     <div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#111;line-height:1.5">
       <h2>Confirmação de Marcação</h2>
-      <p>Olá <strong>${customerName}${isFamily ? ` e ${secondPersonName || 'Outro Cliente'}` : ''}</strong>,</p>
+      <p>Olá <strong>${customerName}${isFamily ? ` </strong>e<strong> ${secondPersonName || 'Outro Cliente'}` : ''}</strong>,</p>
       <p>A sua marcação foi confirmada:</p>
       
       <p><strong>Data:</strong> ${date}</p>
       <p><strong>Hora:</strong> ${time}</p>
       <p><strong>Serviço:</strong> ${serviceName}</p>
-      <p><strong>Barbeiro(s):</strong> ${barberName}${isFamily ? `, ${secondPersonName || 'Outro Cliente'}` : ''}</p>
-      
-      ${isFamily ? `
-        <p><strong>Informações do Segundo Cliente:</strong></p>
-        <p><strong>Nome:</strong> ${secondPersonName || 'Não fornecido'}</p>
-        <p><strong>Telefone:</strong> ${secondPersonPhone || 'Não fornecido'}</p>
-      ` : ''}
-      
-      <p>Se precisar de alterar ou cancelar a marcação, por favor entre em contato pelo telefone: <strong>210165258</strong>.</p>
+      <p><strong>Barbeiro(s):</strong> ${barberName} e ${barberName}</p>
+          
+      <p>Se precisar de alterar ou cancelar a marcação, por favor entre em contato pelo telefone: <strong>210 165 258</strong>.</p>
       <p>Obrigado,<br/>MHM Studio</p>
     </div>
   `;
